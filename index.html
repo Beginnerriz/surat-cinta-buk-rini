@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Surat Cinta</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: linear-gradient(to bottom, #fefcea, #f1da36);
+      text-align: center;
+      margin: 0;
+      height: 100vh;
+      overflow: hidden;
+    }
+    #ball {
+      width: 50px;
+      height: 50px;
+      background: radial-gradient(circle at 30% 30%, #ff6666, #cc0000);
+      border-radius: 50%;
+      position: absolute;
+      top: 100px;
+      left: 50%;
+      transform: translateX(-50%);
+      cursor: grab;
+      z-index: 10;
+      box-shadow: 0 0 25px rgba(255, 0, 0, 0.7);
+      animation: bounce 1s infinite;
+      transition: transform 0.2s;
+    }
+    @keyframes bounce {
+      0%, 100% {
+        transform: translate(-50%, 0);
+      }
+      50% {
+        transform: translate(-50%, -20px);
+      }
+    }
+    .container {
+      width: 100px;
+      height: 100px;
+      border: 5px solid #000;
+      border-top: none;
+      background: #fff;
+      position: absolute;
+      top: 250px;
+      transition: all 0.6s ease;
+    }
+    #container1 {
+      left: 50%;
+      transform: translateX(-50%);
+    }
+    #container2 {
+      display: none;
+    }
+    #instruction {
+      font-size: 24px;
+      font-weight: bold;
+      padding: 20px;
+    }
+    .message {
+      position: fixed;
+      left: 50%;
+      top: 50%;
+      transform: translate(-50%, -50%);
+      background: rgba(0, 0, 0, 0.9);
+      color: white;
+      padding: 25px;
+      border-radius: 20px;
+      max-width: 80%;
+      font-size: 18px;
+      z-index: 1000;
+      display: none;
+      border: 2px solid white;
+      box-shadow: 0 0 25px rgba(0, 0, 0, 0.8);
+    }
+    .message.show {
+      display: block;
+    }
+    .close-btn {
+      position: absolute;
+      top: 10px;
+      right: 15px;
+      font-size: 22px;
+      color: white;
+      background: none;
+      border: none;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+  <div id="instruction">🎯 Masukkan bola ke dalam wadah untuk melihat pesan</div>
+  <div id="ball"></div>
+  <div id="container1" class="container"></div>
+  <div id="container2" class="container"></div>
+  <div id="popup" class="message">
+    <button class="close-btn" onclick="closePopup()">×</button>
+    <span id="popup-text"></span>
+  </div>
+
+  <script>
+    let attempts = 0;
+    const maxAttempts = 10;
+    const ball = document.getElementById("ball");
+    const container1 = document.getElementById("container1");
+    const container2 = document.getElementById("container2");
+    const popup = document.getElementById("popup");
+    const popupText = document.getElementById("popup-text");
+    const instruction = document.getElementById("instruction");
+
+    function showMessage(text, autoClose = false) {
+      popupText.textContent = text;
+      popup.classList.add("show");
+      if (autoClose) {
+        setTimeout(() => popup.classList.remove("show"), 1500);
+      }
+    }
+
+    function closePopup() {
+      popup.classList.remove("show");
+    }
+
+    function randomizeContainer(container) {
+      const viewportWidth = window.innerWidth;
+      const viewportHeight = window.innerHeight;
+      const offsetX = Math.random() * (viewportWidth - 150);
+      const offsetY = Math.random() * (viewportHeight - 300);
+      const rotation = Math.random() * 360;
+      container.style.left = `${offsetX}px`;
+      container.style.top = `${offsetY}px`;
+      container.style.transform = `rotate(${rotation}deg)`;
+    }
+
+    let offsetX, offsetY;
+
+    ball.addEventListener("mousedown", function(e) {
+      offsetX = e.offsetX;
+      offsetY = e.offsetY;
+
+      function moveAt(e) {
+        ball.style.left = e.pageX - offsetX + 'px';
+        ball.style.top = e.pageY - offsetY + 'px';
+      }
+
+      function onMouseMove(e) {
+        moveAt(e);
+      }
+
+      document.addEventListener("mousemove", onMouseMove);
+
+      document.addEventListener("mouseup", function mouseUpHandler(e) {
+        document.removeEventListener("mousemove", onMouseMove);
+        document.removeEventListener("mouseup", mouseUpHandler);
+
+        const ballRect = ball.getBoundingClientRect();
+        const container1Rect = container1.getBoundingClientRect();
+        const container2Rect = container2.getBoundingClientRect();
+
+        const isOverlapping1 = (
+          ballRect.left < container1Rect.right &&
+          ballRect.right > container1Rect.left &&
+          ballRect.top < container1Rect.bottom &&
+          ballRect.bottom > container1Rect.top
+        );
+
+        const isOverlapping2 = (
+          container2.style.display !== "none" &&
+          ballRect.left < container2Rect.right &&
+          ballRect.right > container2Rect.left &&
+          ballRect.top < container2Rect.bottom &&
+          ballRect.bottom > container2Rect.top
+        );
+
+        attempts++;
+
+        if (attempts === 5) {
+          container2.style.display = "block";
+          instruction.textContent = "🤔 Tebak yang mana buk!";
+          randomizeContainer(container1);
+          randomizeContainer(container2);
+        }
+
+        // Jika sudah percobaan ke-5 dan bola dimasukkan ke salah satu wadah
+        if ((isOverlapping1 || isOverlapping2) && attempts === 5) {
+          setTimeout(() => {
+            randomizeContainer(container1);
+            randomizeContainer(container2);
+          }, 200);
+          return;
+        }
+
+        if (attempts === 6) {
+          container2.style.display = "none";
+          instruction.textContent = "🎯 Masukkan bola ke dalam wadah, kalau bisa 😈";
+        }
+
+        if ((isOverlapping1 || isOverlapping2) && attempts < maxAttempts) {
+          randomizeContainer(container1);
+          if (attempts > 5) randomizeContainer(container2);
+          ball.style.top = ball.offsetTop - 60 + 'px';
+          ball.style.left = ball.offsetLeft + 30 + 'px';
+        } else if ((isOverlapping1 || isOverlapping2) && attempts === maxAttempts) {
+          const target = isOverlapping1 ? container1 : container2;
+          ball.style.left = (target.offsetLeft + 30) + 'px';
+          ball.style.top = (target.offsetTop + 30) + 'px';
+          setTimeout(() => {
+            showMessage("Terima kasih buk udah sabar 💖 Sama kayak sabarnya ibuk ngajar saya selama satu semester ini.\n\nTugas jurnal dan surat cinta saya cuma gini aja buk, jauh dari kata sempurna. Maaf buk, saya ga punya banyak hal buat diceritain. Nanti cerita sama Allah aja ya buk 😇🙏", false);
+          }, 500);
+        }
+      });
+    });
+  </script>
+</body>
+</html>
